@@ -1,45 +1,50 @@
 import { fetchBreeds, fetchBreed } from './js/cat-api';
 
+const BREED_LIST_KEY = 'breedList';
+const BREED_EXPIRY = 3600000 * 24; // 24 hours
 const elements = {
-  select: document.querySelector('.breed-list'),
+  section: document.querySelector('body > section'),
   info: document.querySelector('.breed-info-wrapper'),
 };
 
-const BREED_LIST_KEY = 'breedList';
-const BREED_EXPIRY = 3600000 * 24; // 24 hours
-
 const populateSelect = breedList => {
-  const optionElements = [];
+  const selectElement = document.createElement('select');
+  selectElement.name = 'breed';
+  selectElement.classList.add('breed-list');
 
   breedList.forEach(({ id, name }) => {
     const optionEl = document.createElement('option');
     optionEl.value = id;
     optionEl.textContent = name;
-    optionElements.push(optionEl);
+    selectElement.append(optionEl);
   });
 
-  elements.select.append(...optionElements);
-  elements.select.addEventListener('change', onBreedSelect);
+  elements.section.insertAdjacentElement('afterbegin', selectElement);
+  selectElement.addEventListener('change', onBreedSelect);
 };
 
 const onBreedSelect = event => {
   event.preventDefault();
+  elements.info.innerHTML = '';
   const selectedBreedId = event.target.value;
 
   if (!selectedBreedId) {
-    elements.info.innerHTML = '';
-
+    showBreedInformation();
     return;
   }
 
   fetchBreed(selectedBreedId)
     .then(showBreedInformation)
-    .catch(error => {
-      console.error(error);
-    });
+    .catch(error => {});
 };
 
-const showBreedInformation = ({ name, description, temperament, image_url }) => {
+const showBreedInformation = (breedInformation = null) => {
+  if (!breedInformation) {
+    elements.info.innerHTML = '';
+    return;
+  }
+
+  const { name, description, temperament, image_url } = breedInformation;
   const catEl = `
     <div class="breed-info">
         <img src="${image_url}" width="300" alt="${name}" class="thumb">
@@ -54,7 +59,6 @@ const showBreedInformation = ({ name, description, temperament, image_url }) => 
 };
 
 const saveLocalBreedList = breedList => {
-  console.log({ breedList, len: breedList?.length });
   if (!breedList || breedList?.length === 0) return;
   localStorage.setItem(BREED_LIST_KEY, JSON.stringify({ breedList, expire: Date.now() + BREED_EXPIRY }));
 };
@@ -71,18 +75,10 @@ const getLocalBreedList = () => {
 };
 
 const updateBreedList = async () => {
-  let breedList = [];
-  try {
-    breedList = await fetchBreeds();
-    saveLocalBreedList(breedList);
-  } catch (error) {
-    console.error(error);
-  }
+  const breedList = await fetchBreeds();
+  saveLocalBreedList(breedList);
+
   return breedList;
 };
 
-(async () => {
-  let breedList = getLocalBreedList() || (await updateBreedList());
-
-  populateSelect(breedList);
-})();
+(async () => populateSelect(getLocalBreedList() || (await updateBreedList())))();

@@ -14,12 +14,11 @@ export const fetchBreeds = () => {
   return axios
     .get('https://api.thecatapi.com/v1/breeds')
     .then(response => {
-      console.log({ response });
       return response;
     })
     .then(response => response.data.map(({ id, name }) => ({ id, name })))
     .catch(error => {
-      console.error(error);
+      // console.error(error);
       elements.error.show();
     })
     .finally(() => {
@@ -44,7 +43,7 @@ export const fetchBreed = id => {
       return { id, name, description, temperament, image_url: url };
     })
     .catch(error => {
-      console.error(error);
+      // console.error(error);
       elements.error.show();
       return null;
     })
